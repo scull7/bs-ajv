@@ -31,7 +31,9 @@
   "repository": "git@github.com:scull7/bs-ajv.git",
   "author": "Nathan Sculli <scull7@gmail.com>",
   "license": "MIT",
-  "dependencies": {},
+  "dependencies": {
+    "ajv": "^6.2.1"
+  },
   "devDependencies": {
     "@glennsl/bs-jest": "^0.4.2",
     "bs-platform": "^2.2.2",
