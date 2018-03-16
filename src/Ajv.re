@@ -2,7 +2,7 @@ type t;
 type options;
 type schema = Js.Json.t;
 type format;
-type keyword;
+type keyword('a) = AjvKeyword.t('a);
 type errors;
 type validator = (
   Js.Json.t /* data */,
@@ -78,7 +78,7 @@ let compile = (schema, t) => {
   | `Definition(format)
   ]) => t = "";
 
-[@bs.send.pipe : t] external addKeyword : string => keyword => t = "";
+[@bs.send.pipe : t] external addKeyword : string => keyword('a) => t = "";
 
 [@bs.send.pipe : t] external getKeyword : string => Js.Json.t = "";
 
