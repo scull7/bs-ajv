@@ -27,9 +27,14 @@ describe("Ajv Custom Keywords", () => {
       ("exclusiveRange", boolean(Js.true_))
     ]));
 
-    let validate = ajv |> Ajv.compile(schema);
+    let validate =
+      switch(ajv |> Ajv.compile(schema)) {
+      | `Sync(fn) => fn
+      | `Async(_) => failwith("unexpected_async_mode")
+      };
+
     let handler = fun
-      | `Valid => Js.true_
+      | `Valid(_) => Js.true_
       | `Invalid(_) => Js.false_;
 
     let genTest = (msg, input, expected) =>
@@ -44,5 +49,79 @@ describe("Ajv Custom Keywords", () => {
     genTest("3.99 should pass", 3.99, Js.true_);
     genTest("2.0 should fail", 2.0, Js.false_);
     genTest("4.0 should fail", 4.0, Js.false_);
+  });
+});
+
+describe("Ajv Custom Async Keywords", () => {
+  describe("Ajv Docs: checkIdExists Keyword", () => {
+    let check = AjvKeyword.make();
+    AjvKeyword.setType(check, "number");
+    AjvKeyword.setIsAsync(check, Js.true_);
+    AjvKeyword.setAsyncValidator(check, (schema, data, _) => {
+      let id = Json.Decode.int(data);
+      let table = Json.Decode.(field("table", string, schema));
+      let result = switch (table) {
+      | "users" => `Ok(id == 1)
+      | "posts" => `Ok(id == 19)
+      | _ => `Err({j|Invalid table: $table|j})
+      };
+      Js.(
+        switch (result) {
+        | `Err(msg) => Promise.reject(Failure(msg))
+        | `Ok(isValid) =>
+          isValid
+          |> Boolean.to_js_boolean
+          |> Promise.resolve
+        }
+      )
+    });
+
+    let options = AjvOptions.make();
+    let ajv = Ajv.ajv(options) |> Ajv.addKeyword("idExists", check);
+
+    let schema = Json.Encode.(object_([
+      ("$async", boolean(Js.true_)),
+      ("properties", object_([
+        ("userId", object_([
+          ("type", string("integer")),
+          ("idExists", object_([ ("table", string("users")) ]))
+        ])),
+        ("postId", object_([
+          ("type", string("integer")),
+          ("idExists", object_([ ("table", string("posts")) ]))
+        ])),
+      ])),
+    ]));
+    let validate =
+      switch(ajv |> Ajv.compile(schema)) {
+      | `Sync(_) => failwith("unexpected_sync_mode")
+      | `Async(fn) => fn
+      };
+
+    let genTest = (msg, userId, postId, expected) =>
+      testPromise(msg, () => {
+        let json = Json.Encode.(object_([
+          ("userId", int(userId)),
+          ("postId", int(postId)),
+        ]));
+        Js.Promise.(
+          validate(json)
+          |> then_(fun
+            | `Invalid(_) => Js.false_ |> resolve
+            | `Valid(_) => Js.true_ |> resolve
+            )
+          |> catch( (_) => resolve(Js.false_))
+          |> then_(res =>
+              res
+              |> Expect.expect
+              |> Expect.toBe(expected)
+              |> resolve
+            )
+        )
+      });
+
+    genTest("valid data", 1, 19, Js.true_);
+    genTest("invalid userId", 2, 19, Js.false_);
+    genTest("invalid postId", 1, 20, Js.false_);
   });
 });

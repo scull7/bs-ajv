@@ -29,9 +29,14 @@ describe("data filtering (removeAdditional option)", () => {
       ])),
     ]));
 
-    let validate = Ajv.ajv(options) |> Ajv.compile(schema);
+    let validate =
+      switch(Ajv.ajv(options) |> Ajv.compile(schema)) {
+      | `Sync(fn) => fn
+      | `Async(_) => failwith("unexpected_async_mode")
+      };
+
     let handler = fun
-      | `Valid => Js.true_
+      | `Valid(_) => Js.true_
       | `Invalid(_) => Js.false_;
 
     validate(validData)

@@ -19,16 +19,32 @@ type validator = (
 
 let compile = (schema, t) => {
   let v = t |> compile(schema);
+  let null = Js.Json.null;
+  let isAsync =
+    schema
+    |> Json.Decode.(optional(field("$async", boolean)))
+    |> Js.Option.getWithDefault(Js.false_)
+    |> Js.to_bool;
 
-  (json) => {
-    let null = Js.Json.null;
-    let res = v(json, null, null, null, null);
-    switch (Js.Json.classify(res)) {
-    | Js.Json.JSONTrue => `Valid
+  let run = json => v(json, null, null, null, null);
+
+  let classify = json =>
+    switch(json |> Js.Json.classify) {
+    | Js.Json.JSONObject(_) => `Valid(json)
+    | Js.Json.JSONTrue => `Valid(json)
     | Js.Json.JSONFalse => `Invalid(getErrors(v))
     | _ => failwith("invalid_validation_result")
     };
-  };
+
+  let sync = json => json |> run |> classify;
+
+  let async = json => Js.Promise.(
+    resolve(json)
+    |> then_(json => json |> run |> resolve)
+    |> then_(res => res |> classify |> resolve)
+  );
+
+  isAsync ? `Async(async) : `Sync(sync)
 };
 
 

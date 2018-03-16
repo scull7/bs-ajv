@@ -20,6 +20,12 @@ let make = (): t('a) => Js.Obj.empty();
 [@bs.set] external setValidator :
   (t('a), (Js.Json.t, Js.Json.t, Js.Json.t) => Js.boolean) => unit = "validate";
 
+[@bs.set] external setAsyncValidator :
+  (
+    t('a),
+    ((Js.Json.t, Js.Json.t, Js.Json.t) => Js.Promise.t(Js.boolean))
+  ) => unit = "validate";
+
 /*
   _NOTE:_ `compile`, `macro` and `inline` are mutually exclusive, only one
   should be used at a time.  `validate` can be used separately or in
@@ -33,6 +39,11 @@ let make = (): t('a) => Js.Obj.empty();
 [@bs.set] external setCompiler :
   (
     t('a), (Js.Json.t, Js.Json.t) => (('b) => Js.boolean)
+  ) => unit = "compile";
+
+[@bs.set] external setAsyncCompiler :
+  (
+    t('a), (Js.Json.t, Js.Json.t) => (('b) => Js.Promise.t(Js.boolean))
   ) => unit = "compile";
 
 /*
