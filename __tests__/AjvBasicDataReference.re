@@ -1,8 +1,8 @@
 open Jest;
 
 describe("$data reference", () => {
-  let options = AjvOptions.make();
-  AjvOptions.setData(options, Js.true_);
+  let options = Ajv_options.make();
+  Ajv_options.setData(options, Js.true_);
 
   /* https://www.npmjs.com/package/ajv#data-reference */
   test("smaller/larger example", () => {

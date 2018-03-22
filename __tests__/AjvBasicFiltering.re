@@ -1,47 +1,81 @@
 open Jest;
 
 describe("data filtering (removeAdditional option)", () => {
-  let options = AjvOptions.make();
-  AjvOptions.removeAdditional(options, Js.true_);
-
+  let options = Ajv_options.make();
+  Ajv_options.allErrors(options, Js.true_);
+  Ajv_options.jsonPointers(options, Js.true_);
+  Ajv_options.removeAdditional(options, Js.true_);
+  let schema =
+    Json.Encode.(
+      object_([
+        ("required", array(string, [|"foo", "bar"|])),
+        ("additionalProperties", bool(false)),
+        (
+          "properties",
+          object_([
+            ("foo", object_([("type", string("number"))])),
+            ("bar", object_([("baz", object_([("type", string("string"))]))]))
+          ])
+        )
+      ])
+    );
   /* https://www.npmjs.com/package/ajv#filtering-data */
   test("basic remove additional test", () => {
-    let schema = Json.Encode.(object_([
-      ("additionalProperties", bool(false)),
-      ("properties", object_([
-        ("foo", object_([
-          ("type", string("number")),
-        ])),
-        ("bar", object_([
-          ("baz", object_([
-            ("type", string("string")),
-          ])),
-        ])),
-      ])),
-    ]));
-
-    let validData = Json.Encode.(object_([
-      ("foo", int(0)),
-      ("additional1", int(1)),
-      ("bar", object_([
-        ("baz", string("abc")),
-        ("additional2", int(2)),
-      ])),
-    ]));
-
+    let validData =
+      Json.Encode.(
+        object_([
+          ("foo", int(0)),
+          ("additional1", int(1)),
+          ("bar", object_([("baz", string("abc")), ("additional2", int(2))]))
+        ])
+      );
     let validate =
-      switch(Ajv.ajv(options) |> Ajv.compile(schema)) {
+      switch (Ajv.ajv(options) |> Ajv.compile(schema)) {
       | `Sync(fn) => fn
       | `Async(_) => failwith("unexpected_async_mode")
       };
-
-    let handler = fun
+    let handler =
+      fun
       | `Valid(_) => Js.true_
       | `Invalid(_) => Js.false_;
-
-    validate(validData)
+    validate(validData) |> handler |> Expect.expect |> Expect.toBe(Js.true_);
+  });
+  test("errors should be returned as a json array", () => {
+    let invalidData = Json.Encode.(object_([("foo", string("bar"))]));
+    let validate =
+      switch (Ajv.ajv(options) |> Ajv.compile(schema)) {
+      | `Sync(fn) => fn
+      | `Async(_) => failwith("unexpected_async_mode")
+      };
+    let handler =
+      fun
+      | `Valid(_) => Js.false_
+      | `Invalid(err) =>
+        switch (Js.Json.classify(err)) {
+        | Js.Json.JSONArray(_) => Js.true_
+        | x =>
+          Js.log2("INVALID: ", x);
+          Js.false_;
+        };
+    validate(invalidData) |> handler |> Expect.expect |> Expect.toBe(Js.true_);
+  });
+  test("required errors should all be returned", () => {
+    let invalidData = Json.Encode.(object_([]));
+    let validate =
+      switch (Ajv.ajv(options) |> Ajv.compile(schema)) {
+      | `Sync(fn) => fn
+      | `Async(_) => failwith("unexpected_async_mode")
+      };
+    let handler =
+      fun
+      | `Valid(_) => [||]
+      | `Invalid(err) => {
+          let x = Ajv.Error.toDict(err);
+          [|Belt_MapString.has(x, "foo"), Belt_MapString.has(x, "bar")|];
+        };
+    validate(invalidData)
     |> handler
     |> Expect.expect
-    |> Expect.toBe(Js.true_);
+    |> Expect.toEqual([|true, true|]);
   });
 });
