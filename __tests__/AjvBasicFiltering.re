@@ -5,6 +5,13 @@ describe("data filtering (removeAdditional option)", () => {
   Ajv_options.allErrors(options, Js.true_);
   Ajv_options.jsonPointers(options, Js.true_);
   Ajv_options.removeAdditional(options, Js.true_);
+  let validate = (schema, document) => {
+    let validate_ajv = switch (Ajv.ajv(options) |> Ajv.compile(schema)) {
+    | `Sync(fn) => fn
+    | `Async(fn) => failwith("unexpected_async_mode")
+    };
+    validate_ajv(document)
+  };
   let schema =
     Json.Encode.(
       object_([
@@ -29,24 +36,15 @@ describe("data filtering (removeAdditional option)", () => {
           ("bar", object_([("baz", string("abc")), ("additional2", int(2))]))
         ])
       );
-    let validate =
-      switch (Ajv.ajv(options) |> Ajv.compile(schema)) {
-      | `Sync(fn) => fn
-      | `Async(_) => failwith("unexpected_async_mode")
-      };
+
     let handler =
       fun
       | `Valid(_) => Js.true_
       | `Invalid(_) => Js.false_;
-    validate(validData) |> handler |> Expect.expect |> Expect.toBe(Js.true_);
+    validate(schema, validData) |> handler |> Expect.expect |> Expect.toBe(Js.true_);
   });
   test("errors should be returned as a json array", () => {
     let invalidData = Json.Encode.(object_([("foo", string("bar"))]));
-    let validate =
-      switch (Ajv.ajv(options) |> Ajv.compile(schema)) {
-      | `Sync(fn) => fn
-      | `Async(_) => failwith("unexpected_async_mode")
-      };
     let handler =
       fun
       | `Valid(_) => Js.false_
@@ -57,15 +55,10 @@ describe("data filtering (removeAdditional option)", () => {
           Js.log2("INVALID: ", x);
           Js.false_;
         };
-    validate(invalidData) |> handler |> Expect.expect |> Expect.toBe(Js.true_);
+    validate(schema, invalidData) |> handler |> Expect.expect |> Expect.toBe(Js.true_);
   });
   test("required errors should all be returned", () => {
     let invalidData = Json.Encode.(object_([]));
-    let validate =
-      switch (Ajv.ajv(options) |> Ajv.compile(schema)) {
-      | `Sync(fn) => fn
-      | `Async(_) => failwith("unexpected_async_mode")
-      };
     let handler =
       fun
       | `Valid(_) => [||]
@@ -73,7 +66,7 @@ describe("data filtering (removeAdditional option)", () => {
           let x = Ajv.Error.toDict(err);
           [|Belt_MapString.has(x, "foo"), Belt_MapString.has(x, "bar")|];
         };
-    validate(invalidData)
+    validate(schema, invalidData)
     |> handler
     |> Expect.expect
     |> Expect.toEqual([|true, true|]);
