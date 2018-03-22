@@ -64,11 +64,7 @@ describe("data filtering (removeAdditional option)", () => {
       | `Valid(_) => [||]
       | `Invalid(err) => {
           let x = Ajv.Error.toDict(err);
-          [|
-            Belt_MapString.has(x, "foo")
-          , Belt_MapString.has(x, "bar")
-          , 
-          |];
+          [|Belt_MapString.has(x, "foo"), Belt_MapString.has(x, "bar")|];
         };
     validate(schema, invalidData)
     |> handler
