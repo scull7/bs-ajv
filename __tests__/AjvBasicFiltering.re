@@ -6,11 +6,12 @@ describe("data filtering (removeAdditional option)", () => {
   Ajv_options.jsonPointers(options, Js.true_);
   Ajv_options.removeAdditional(options, Js.true_);
   let validate = (schema, document) => {
-    let validate_ajv = switch (Ajv.ajv(options) |> Ajv.compile(schema)) {
-    | `Sync(fn) => fn
-    | `Async(fn) => failwith("unexpected_async_mode")
-    };
-    validate_ajv(document)
+    let validate_ajv =
+      switch (Ajv.ajv(options) |> Ajv.compile(schema)) {
+      | `Sync(fn) => fn
+      | `Async(fn) => failwith("unexpected_async_mode")
+      };
+    validate_ajv(document);
   };
   let schema =
     Json.Encode.(
@@ -21,9 +22,12 @@ describe("data filtering (removeAdditional option)", () => {
           "properties",
           object_([
             ("foo", object_([("type", string("number"))])),
-            ("bar", object_([("baz", object_([("type", string("string"))]))]))
-          ])
-        )
+            (
+              "bar",
+              object_([("baz", object_([("type", string("string"))]))]),
+            ),
+          ]),
+        ),
       ])
     );
   /* https://www.npmjs.com/package/ajv#filtering-data */
@@ -33,15 +37,20 @@ describe("data filtering (removeAdditional option)", () => {
         object_([
           ("foo", int(0)),
           ("additional1", int(1)),
-          ("bar", object_([("baz", string("abc")), ("additional2", int(2))]))
+          (
+            "bar",
+            object_([("baz", string("abc")), ("additional2", int(2))]),
+          ),
         ])
       );
-
     let handler =
       fun
       | `Valid(_) => Js.true_
       | `Invalid(_) => Js.false_;
-    validate(schema, validData) |> handler |> Expect.expect |> Expect.toBe(Js.true_);
+    validate(schema, validData)
+    |> handler
+    |> Expect.expect
+    |> Expect.toBe(Js.true_);
   });
   test("errors should be returned as a json array", () => {
     let invalidData = Json.Encode.(object_([("foo", string("bar"))]));
@@ -55,7 +64,10 @@ describe("data filtering (removeAdditional option)", () => {
           Js.log2("INVALID: ", x);
           Js.false_;
         };
-    validate(schema, invalidData) |> handler |> Expect.expect |> Expect.toBe(Js.true_);
+    validate(schema, invalidData)
+    |> handler
+    |> Expect.expect
+    |> Expect.toBe(Js.true_);
   });
   test("required errors should all be returned", () => {
     let invalidData = Json.Encode.(object_([]));
