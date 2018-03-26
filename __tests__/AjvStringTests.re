@@ -33,6 +33,7 @@ describe("string tests", () => {
               object_([
                 ("type", string("string")),
                 ("minLength", int(1)),
+                ("pattern", string("^(e.*|)$")),
               ]),
             ),
           ]),
@@ -83,6 +84,23 @@ describe("string tests", () => {
           [|Belt_MapString.has(x, "foo"), Belt_MapString.has(x, "bar")|];
         };
     validate(schema, validData)
+    |> handler
+    |> Expect.expect
+    |> Expect.toEqual([|false, true|]);
+  });
+  test("disrespected regexp pattern should fail to validate", () => {
+    let invalidData =
+      Json.Encode.(
+        object_([("foo", string("hello")), ("bar", string("gena"))])
+      );
+    let handler =
+      fun
+      | `Valid(_) => [||]
+      | `Invalid(err) => {
+          let x = Ajv.Error.toDict(err);
+          [|Belt_MapString.has(x, "foo"), Belt_MapString.has(x, "bar")|];
+        };
+    validate(schema, invalidData)
     |> handler
     |> Expect.expect
     |> Expect.toEqual([|false, true|]);
