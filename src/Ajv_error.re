@@ -3,6 +3,13 @@ type t = {
   message: string,
 };
 
+/* NOTE we offer ml-native representations of quite a lot of the original
+ * Ajv error description objects, however we don't use much of them at all.
+ * They are left here for you if you should have need for them, but be
+ * warned they may not be thoroughly tested!
+ * RawValidationError.RawParams.fromJson is a particularly juicy target if
+ * you want to start cutting the fat
+ */
 module RawValidationError = {
   module RawParams = {
     type t =
@@ -15,11 +22,12 @@ module RawValidationError = {
       | "required" =>
         MissingProperty(Json.Decode.(field("missingProperty", string, json)))
       | "type" => TypeError(Json.Decode.(field("type", string, json)))
-      | "minimum" => LimitError(Json.Decode.(field("limit", int, json)))
-      | "maximum" => LimitError(Json.Decode.(field("limit", int, json)))
-      | "exclusiveMaximum" =>
-        LimitError(Json.Decode.(field("limit", int, json)))
-      | "exclusiveMinimum" =>
+      | "minimum"
+      | "maximum"
+      | "exclusiveMaximum"
+      | "exclusiveMinimum"
+      | "maxLength"
+      | "minLength" =>
         LimitError(Json.Decode.(field("limit", int, json)))
       | "multipleOf" =>
         MultipleOfError(Json.Decode.(field("multipleOf", int, json)))
@@ -53,6 +61,8 @@ module RawValidationError = {
     | ("type", TypeError(_))
     | ("minimum", LimitError(_))
     | ("maximum", LimitError(_))
+    | ("maxLength", LimitError(_))
+    | ("minLength", LimitError(_))
     | ("exclusiveMinimum", LimitError(_))
     | ("exclusiveMaximum", LimitError(_))
     | ("multipleOf", MultipleOfError(_)) => {
