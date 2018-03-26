@@ -8,7 +8,8 @@ module RawValidationError = {
     type t =
       | MissingProperty(string)
       | LimitError(int)
-      | TypeError(string);
+      | TypeError(string)
+      | MultipleOfError(int);
     let fromJson = (keyword, json) =>
       switch (keyword) {
       | "required" =>
@@ -22,6 +23,8 @@ module RawValidationError = {
         LimitError(Json.Decode.(field("limit", int, json)))
       | "exclusiveMinimum" =>
         LimitError(Json.Decode.(field("limit", int, json)))
+      | "multipleOf" =>
+        MultipleOfError(Json.Decode.(field("multipleOf", int, json)))
       | _ => failwith({j|Unknown keyword: $keyword|j})
       };
   };
@@ -53,7 +56,8 @@ module RawValidationError = {
     | ("minimum", LimitError(_))
     | ("maximum", LimitError(_))
     | ("exclusiveMinimum", LimitError(_))
-    | ("exclusiveMaximum", LimitError(_)) => {
+    | ("exclusiveMaximum", LimitError(_))
+    | ("multipleOf", MultipleOfError(_)) => {
         key: String.sub(dataPath, 1, String.length(dataPath) - 1),
         message,
       }

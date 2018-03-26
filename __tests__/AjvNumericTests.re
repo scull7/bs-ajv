@@ -138,4 +138,74 @@ describe("numeric tests", () => {
     |> Expect.expect
     |> Expect.toEqual([|true, true|]);
   });
+  let multipleOfSchema = Json.Encode.(
+    object_([
+      ("required", array(string, [|"foo", "bar"|])),
+      ("additionalProperties", bool(false)),
+      (
+        "properties",
+        object_([
+          (
+            "foo",
+            object_([
+              ("type", string("number")),
+              ("multipleOf", int(2)),
+            ]),
+          ),
+          (
+            "bar",
+            object_([
+              ("type", string("number")),
+              ("multipleOf", int(3)),
+            ]),
+          ),
+        ]),
+      ),
+    ])
+  );
+  test(
+    "respected multipleOf should validate",
+    () => {
+    let validData =
+      Json.Encode.(object_([("foo", int(2222)), ("bar", int(3333))]));
+    let handler =
+      fun
+      | `Valid(_) => Js.true_
+      | `Invalid(_) => Js.false_;
+    validate(multipleOfSchema, validData)
+    |> handler
+    |> Expect.expect
+    |> Expect.toBe(Js.true_)
+  });
+  test(
+    "disrespected multipleOf should fail to validate",
+    () => {
+    let validData =
+      Json.Encode.(object_([("foo", int(3333)), ("bar", int(2222))]));
+    let handler =
+      fun
+      | `Valid(_) => Js.true_
+      | `Invalid(_) => Js.false_;
+    validate(multipleOfSchema, validData)
+    |> handler
+    |> Expect.expect
+    |> Expect.toBe(Js.false_)
+  });
+  test(
+    "disrespected multipleOf should report invalid fields",
+    () => {
+    let validData =
+      Json.Encode.(object_([("foo", int(2222)), ("bar", int(2222))]));
+    let handler =
+      fun
+      | `Valid(_) => [||]
+      | `Invalid(err) => {
+          let x = Ajv.Error.toDict(err);
+          [|Belt_MapString.has(x, "foo"), Belt_MapString.has(x, "bar")|];
+        };
+    validate(multipleOfSchema, validData)
+    |> handler
+    |> Expect.expect
+    |> Expect.toEqual([|false, true|]);
+  });
 });
