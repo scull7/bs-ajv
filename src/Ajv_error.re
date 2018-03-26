@@ -7,7 +7,7 @@ module RawValidationError = {
   module RawParams = {
     type t =
       | MissingProperty(string)
-      | LimitError(string, int)
+      | LimitError(int)
       | TypeError(string);
     let fromJson = (keyword, json) =>
       switch (keyword) {
@@ -15,13 +15,13 @@ module RawValidationError = {
         MissingProperty(Json.Decode.(field("missingProperty", string, json)))
       | "type" => TypeError(Json.Decode.(field("type", string, json)))
       | "minimum" =>
-        LimitError("foo", Json.Decode.(field("limit", int, json)))
+        LimitError(Json.Decode.(field("limit", int, json)))
       | "maximum" =>
-        LimitError("foo", Json.Decode.(field("limit", int, json)))
+        LimitError(Json.Decode.(field("limit", int, json)))
       | "exclusiveMaximum" =>
-        LimitError("foo", Json.Decode.(field("limit", int, json)))
+        LimitError(Json.Decode.(field("limit", int, json)))
       | "exclusiveMinimum" =>
-        LimitError("foo", Json.Decode.(field("limit", int, json)))
+        LimitError(Json.Decode.(field("limit", int, json)))
       | _ => failwith({j|Unknown keyword: $keyword|j})
       };
   };
@@ -49,7 +49,6 @@ module RawValidationError = {
   let toError = ({keyword, dataPath, message, params, _}) =>
     switch (keyword, params) {
     | ("required", MissingProperty(key)) => {key, message}
-    /* TODO dataPath != key */
     | ("type", TypeError(_))
     | ("minimum", LimitError(_))
     | ("maximum", LimitError(_))
