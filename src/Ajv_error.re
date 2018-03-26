@@ -27,8 +27,7 @@ module RawValidationError = {
       | "exclusiveMaximum"
       | "exclusiveMinimum"
       | "maxLength"
-      | "minLength" =>
-        LimitError(Json.Decode.(field("limit", int, json)))
+      | "minLength" => LimitError(Json.Decode.(field("limit", int, json)))
       | "multipleOf" =>
         MultipleOfError(Json.Decode.(field("multipleOf", int, json)))
       | _ => failwith({j|Unknown keyword: $keyword|j})

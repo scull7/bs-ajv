@@ -41,7 +41,9 @@ describe("string tests", () => {
     );
   test("respected limits should validate", () => {
     let validData =
-      Json.Encode.(object_([("foo", string("hello")), ("bar", string("eugenia"))]));
+      Json.Encode.(
+        object_([("foo", string("hello")), ("bar", string("eugenia"))])
+      );
     let handler =
       fun
       | `Valid(_) => Js.true_
@@ -53,7 +55,12 @@ describe("string tests", () => {
   });
   test("disrespected limits should fail to validate", () => {
     let validData =
-      Json.Encode.(object_([("foo", string("greetings")), ("bar", string("eugenia"))]));
+      Json.Encode.(
+        object_([
+          ("foo", string("greetings")),
+          ("bar", string("eugenia")),
+        ])
+      );
     let handler =
       fun
       | `Valid(_) => Js.true_
@@ -65,7 +72,9 @@ describe("string tests", () => {
   });
   test("disrespected limits should report invalid fields", () => {
     let validData =
-      Json.Encode.(object_([("foo", string("hello")), ("bar", string(""))]));
+      Json.Encode.(
+        object_([("foo", string("hello")), ("bar", string(""))])
+      );
     let handler =
       fun
       | `Valid(_) => [||]
