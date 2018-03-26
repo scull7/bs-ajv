@@ -1,21 +1,29 @@
 type t = {
   key: string,
-  message: string
+  message: string,
 };
 
 module RawValidationError = {
   module RawParams = {
     type t =
       | MissingProperty(string)
-      | Type(string);
-    let fromJson = (keyword, json) => {
-      switch keyword {
+      | LimitError(string, int)
+      | TypeError(string);
+    let fromJson = (keyword, json) =>
+      switch (keyword) {
       | "required" =>
         MissingProperty(Json.Decode.(field("missingProperty", string, json)))
-      | "type" => Type(Json.Decode.(field("type", string, json)))
+      | "type" => TypeError(Json.Decode.(field("type", string, json)))
+      | "minimum" =>
+        LimitError("foo", Json.Decode.(field("limit", int, json)))
+      | "maximum" =>
+        LimitError("foo", Json.Decode.(field("limit", int, json)))
+      | "exclusiveMaximum" =>
+        LimitError("foo", Json.Decode.(field("limit", int, json)))
+      | "exclusiveMinimum" =>
+        LimitError("foo", Json.Decode.(field("limit", int, json)))
       | _ => failwith({j|Unknown keyword: $keyword|j})
       };
-    };
   };
   type t = {
     keyword: string,
@@ -24,7 +32,7 @@ module RawValidationError = {
     params: RawParams.t,
     message: string,
     schema: option(string),
-    parentSchema: option(string)
+    parentSchema: option(string),
   };
   let fromJson = json => {
     let keyword = Json.Decode.field("keyword", Json.Decode.string, json);
@@ -35,19 +43,39 @@ module RawValidationError = {
       params: json |> field("params", RawParams.fromJson(keyword)),
       message: json |> field("message", string),
       schema: json |> optional(field("schema", string)),
-      parentSchema: json |> optional(field("parentSchema", string))
+      parentSchema: json |> optional(field("parentSchema", string)),
     };
   };
-  let toError = ({dataPath, message, params, _}) =>
-    switch params {
-    | RawParams.MissingProperty(key) => {key, message}
-    | RawParams.Type(_) => {key: dataPath, message}
+  let toError = ({keyword, dataPath, message, params, _}) =>
+    switch (keyword, params) {
+    | ("required", MissingProperty(key)) => {key, message}
+    /* TODO dataPath != key */
+    | ("type", TypeError(_))
+    | ("minimum", LimitError(_))
+    | ("maximum", LimitError(_))
+    | ("exclusiveMinimum", LimitError(_))
+    | ("exclusiveMaximum", LimitError(_)) => {
+        key: String.sub(dataPath, 1, String.length(dataPath) - 1),
+        message,
+      }
+    | _ => failwith({j|Unknown keyword: $keyword|j})
     };
 };
 
-let toDict = (json) => {
+let toDict = json =>
   Json.Decode.list(RawValidationError.fromJson, json)
   |> Belt_List.map(_, RawValidationError.toError)
-  |> Belt_List.reduce(_, Belt_MapString.empty, (m, e) => Belt_MapString.set(m, e.key, e.message))
-  ;
-};
+  |> Belt_List.reduce(_, Belt_MapString.empty, (m, e) =>
+       Belt_MapString.set(m, e.key, e.message)
+     );
+
+let logDict = dict =>
+  Belt_MapString.forEach(
+    dict,
+    (k, v) => {
+      Js.log("kv");
+      Js.log(k);
+      Js.log(v);
+      ();
+    },
+  );
