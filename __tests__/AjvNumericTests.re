@@ -9,7 +9,7 @@ describe("numeric tests", () => {
     let validate_ajv =
       switch (Ajv.ajv(options) |> Ajv.compile(schema)) {
       | `Sync(fn) => fn
-      | `Async(fn) => failwith("unexpected_async_mode")
+      | `Async(_) => failwith("unexpected_async_mode")
       };
     validate_ajv(document);
   };
