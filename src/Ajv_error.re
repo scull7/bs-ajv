@@ -15,10 +15,8 @@ module RawValidationError = {
       | "required" =>
         MissingProperty(Json.Decode.(field("missingProperty", string, json)))
       | "type" => TypeError(Json.Decode.(field("type", string, json)))
-      | "minimum" =>
-        LimitError(Json.Decode.(field("limit", int, json)))
-      | "maximum" =>
-        LimitError(Json.Decode.(field("limit", int, json)))
+      | "minimum" => LimitError(Json.Decode.(field("limit", int, json)))
+      | "maximum" => LimitError(Json.Decode.(field("limit", int, json)))
       | "exclusiveMaximum" =>
         LimitError(Json.Decode.(field("limit", int, json)))
       | "exclusiveMinimum" =>
