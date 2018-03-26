@@ -101,4 +101,41 @@ describe("numeric tests", () => {
     |> Expect.expect
     |> Expect.toBe(Js.false_);
   });
+  test(
+    "disrespected minimum and exclusiveMaximum should report correct fields",
+    () => {
+    let invalidData =
+      Json.Encode.(object_([("foo", int(-1)), ("bar", int(0))]));
+    let handler = v => {
+      let handlerResult =
+        switch (v) {
+        | `Valid(_) => [|true, true, true|]
+        | `Invalid(err) =>
+          let x = Ajv.Error.toDict(err);
+          [|Belt_MapString.has(x, "foo"), Belt_MapString.has(x, "bar")|];
+        };
+      handlerResult;
+    };
+    validate(schema, invalidData)
+    |> handler
+    |> Expect.expect
+    |> Expect.toEqual([|true, true|]);
+  });
+  test(
+    "disrespected exclusiveMinimum and maximum should report correct fields",
+    () => {
+    let invalidData =
+      Json.Encode.(object_([("foo", int(9001)), ("bar", int(-9000))]));
+    let handler =
+      fun
+      | `Valid(_) => [||]
+      | `Invalid(err) => {
+          let x = Ajv.Error.toDict(err);
+          [|Belt_MapString.has(x, "foo"), Belt_MapString.has(x, "bar")|];
+        };
+    validate(schema, invalidData)
+    |> handler
+    |> Expect.expect
+    |> Expect.toEqual([|true, true|]);
+  });
 });
