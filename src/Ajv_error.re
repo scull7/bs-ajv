@@ -17,7 +17,8 @@ module RawValidationError = {
       | LimitError(int)
       | TypeError(string)
       | MultipleOfError(int)
-      | PatternError(string);
+      | PatternError(string)
+      | ContainsError;
     let fromJson = (keyword, json) =>
       switch (keyword) {
       | "required" =>
@@ -35,6 +36,7 @@ module RawValidationError = {
         PatternError(Json.Decode.(field("pattern", string, json)))
       | "multipleOf" =>
         MultipleOfError(Json.Decode.(field("multipleOf", int, json)))
+      | "contains" => ContainsError
       | _ => failwith({j|Unknown keyword: $keyword|j})
       };
   };
@@ -86,6 +88,7 @@ module RawValidationError = {
     | ("maxItems", LimitError(_))
     | ("minItems", LimitError(_))
     | ("pattern", PatternError(_))
+    | ("contains", ContainsError)
     | ("multipleOf", MultipleOfError(_)) => {
         key: dataPathToFieldName(dataPath),
         message,
