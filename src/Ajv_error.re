@@ -29,7 +29,8 @@ module RawValidationError = {
       | "exclusiveMinimum"
       | "maxLength"
       | "minLength" => LimitError(Json.Decode.(field("limit", int, json)))
-      | "pattern" => PatternError(Json.Decode.(field("pattern", string, json)))
+      | "pattern" =>
+        PatternError(Json.Decode.(field("pattern", string, json)))
       | "multipleOf" =>
         MultipleOfError(Json.Decode.(field("multipleOf", int, json)))
       | _ => failwith({j|Unknown keyword: $keyword|j})
@@ -56,6 +57,20 @@ module RawValidationError = {
       parentSchema: json |> optional(field("parentSchema", string)),
     };
   };
+  /* Derivation of a flat field name from dataPath applies to most
+   * situations. Notably it does not apply for "required" keyword, and has
+   * a special case for any keyword that fails inside an array.
+   */
+  let dataPathToFieldNameRegexp = Js.Re.fromString({|^/(.*?)(/[0-9]+)?$|});
+  let dataPathToFieldName = dataPath =>
+    switch (Js.Re.exec(dataPath, dataPathToFieldNameRegexp)) {
+    | None => failwith({j|nonconformant Ajv dataPath $dataPath|j})
+    | Some(result) =>
+      switch (Js.Re.captures(result)[1] |> Js.Nullable.toOption) {
+      | None => failwith({j|nonconformant Ajv dataPath $dataPath|j})
+      | Some(result) => result
+      }
+    };
   let toError = ({keyword, dataPath, message, params, _}) =>
     switch (keyword, params) {
     | ("required", MissingProperty(key)) => {key, message}
@@ -68,7 +83,7 @@ module RawValidationError = {
     | ("exclusiveMaximum", LimitError(_))
     | ("pattern", PatternError(_))
     | ("multipleOf", MultipleOfError(_)) => {
-        key: String.sub(dataPath, 1, String.length(dataPath) - 1),
+        key: dataPathToFieldName(dataPath),
         message,
       }
     | _ => failwith({j|Unknown keyword: $keyword|j})
