@@ -28,7 +28,9 @@ module RawValidationError = {
       | "exclusiveMaximum"
       | "exclusiveMinimum"
       | "maxLength"
-      | "minLength" => LimitError(Json.Decode.(field("limit", int, json)))
+      | "minLength"
+      | "maxItems"
+      | "minItems" => LimitError(Json.Decode.(field("limit", int, json)))
       | "pattern" =>
         PatternError(Json.Decode.(field("pattern", string, json)))
       | "multipleOf" =>
@@ -81,6 +83,8 @@ module RawValidationError = {
     | ("minLength", LimitError(_))
     | ("exclusiveMinimum", LimitError(_))
     | ("exclusiveMaximum", LimitError(_))
+    | ("maxItems", LimitError(_))
+    | ("minItems", LimitError(_))
     | ("pattern", PatternError(_))
     | ("multipleOf", MultipleOfError(_)) => {
         key: dataPathToFieldName(dataPath),
