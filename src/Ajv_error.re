@@ -61,6 +61,16 @@ module RawValidationError = {
       parentSchema: json |> optional(field("parentSchema", string)),
     };
   };
+  /* See RFC6901 for details on escaping JSON Pointers */
+  let unescapeJsonPointerRegexp = Js.Re.fromStringWithFlags({|~[01]|}, "g");
+  let unescapeJsonPointerEscapedSubstr = (s, _, _) =>
+    s.[1] == '0' ? "~" : "/";
+  let unescapeJsonPointerStr = s =>
+    Js.String.unsafeReplaceBy0(
+      unescapeJsonPointerRegexp,
+      unescapeJsonPointerEscapedSubstr,
+      s,
+    );
   /* Derivation of a flat field name from dataPath applies to most
    * situations. Notably it does not apply for "required" keyword, and has
    * a special case for any keyword that fails inside an array.
@@ -72,7 +82,7 @@ module RawValidationError = {
     | Some(result) =>
       switch (Js.Re.captures(result)[1] |> Js.Nullable.toOption) {
       | None => failwith({j|nonconformant Ajv dataPath $dataPath|j})
-      | Some(result) => result
+      | Some(result) => result |> unescapeJsonPointerStr
       }
     };
   let toError = ({keyword, dataPath, message, params, _}) =>
