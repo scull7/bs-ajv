@@ -36,7 +36,6 @@ describe("json pointer escaping tests", () => {
           | `Valid(_) => Js.false_
           | `Invalid(err) =>
             let x = Ajv.Error.toDict(err);
-            Js.log(x);
             Belt_MapString.has(x, "foo/bar~baz") ? Js.true_ : Js.false_;
           };
         handlerResult;
