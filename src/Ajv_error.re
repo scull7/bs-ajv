@@ -31,7 +31,10 @@ module RawValidationError = {
       | "maxLength"
       | "minLength"
       | "maxItems"
-      | "minItems" => LimitError(Json.Decode.(field("limit", int, json)))
+      | "minItems"
+      | "maxProperties"
+      | "minProperties" =>
+        LimitError(Json.Decode.(field("limit", int, json)))
       | "pattern" =>
         PatternError(Json.Decode.(field("pattern", string, json)))
       | "multipleOf" =>
@@ -97,6 +100,8 @@ module RawValidationError = {
     | ("exclusiveMaximum", LimitError(_))
     | ("maxItems", LimitError(_))
     | ("minItems", LimitError(_))
+    | ("maxProperties", LimitError(_))
+    | ("minProperties", LimitError(_))
     | ("pattern", PatternError(_))
     | ("contains", ContainsError)
     | ("multipleOf", MultipleOfError(_)) => {
