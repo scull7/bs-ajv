@@ -75,7 +75,7 @@ module RawValidationError = {
    * situations. Notably it does not apply for "required" keyword, and has
    * a special case for any keyword that fails inside an array.
    */
-  let dataPathToFieldNameRegexp = Js.Re.fromString({|^/(.*?)(/[0-9]+)?$|});
+  let dataPathToFieldNameRegexp = Js.Re.fromString({|^/(.*?)(/[^/]+)?$|});
   let dataPathToFieldName = dataPath =>
     switch (Js.Re.exec(dataPath, dataPathToFieldNameRegexp)) {
     | None => failwith({j|nonconformant Ajv dataPath $dataPath|j})
