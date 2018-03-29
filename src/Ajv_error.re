@@ -31,7 +31,10 @@ module RawValidationError = {
       | "maxLength"
       | "minLength"
       | "maxItems"
-      | "minItems" => LimitError(Json.Decode.(field("limit", int, json)))
+      | "minItems"
+      | "maxProperties"
+      | "minProperties" =>
+        LimitError(Json.Decode.(field("limit", int, json)))
       | "pattern" =>
         PatternError(Json.Decode.(field("pattern", string, json)))
       | "multipleOf" =>
@@ -75,7 +78,7 @@ module RawValidationError = {
    * situations. Notably it does not apply for "required" keyword, and has
    * a special case for any keyword that fails inside an array.
    */
-  let dataPathToFieldNameRegexp = Js.Re.fromString({|^/(.*?)(/[0-9]+)?$|});
+  let dataPathToFieldNameRegexp = Js.Re.fromString({|^/(.*?)(/[^/]+)?$|});
   let dataPathToFieldName = dataPath =>
     switch (Js.Re.exec(dataPath, dataPathToFieldNameRegexp)) {
     | None => failwith({j|nonconformant Ajv dataPath $dataPath|j})
@@ -97,6 +100,8 @@ module RawValidationError = {
     | ("exclusiveMaximum", LimitError(_))
     | ("maxItems", LimitError(_))
     | ("minItems", LimitError(_))
+    | ("maxProperties", LimitError(_))
+    | ("minProperties", LimitError(_))
     | ("pattern", PatternError(_))
     | ("contains", ContainsError)
     | ("multipleOf", MultipleOfError(_)) => {
