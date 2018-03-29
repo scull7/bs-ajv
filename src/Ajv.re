@@ -22,13 +22,13 @@ type validator =
     Js.Json.t /* dataPath */,
     Js.Json.t /* parentData */,
     Js.Json.t /* parentDataProperty */,
-    Js.Json.t /* rootData */
-  ) =>
+    Js.Json.t
+  ) => /* rootData */
   Js.Json.t;
 
 [@bs.module] [@bs.new] external ajv : Options.t('a) => t = "ajv";
 
-[@bs.send.pipe : t] external compile : schema => validator = "";
+[@bs.send.pipe: t] external compile : schema => validator = "";
 
 [@bs.get] external getErrors : validator => errors = "errors";
 
@@ -59,7 +59,7 @@ let compile = (schema, t) => {
 };
 
 /* @TODO: compileAsync */
-[@bs.send.pipe : t]
+[@bs.send.pipe: t]
 external validate :
   (
     [@bs.unwrap] [ | `Schema(schema) | `Key(string) | `Ref(string)],
@@ -68,7 +68,7 @@ external validate :
   Js.boolean =
   "";
 
-[@bs.send.pipe : t]
+[@bs.send.pipe: t]
 external addSchema :
   (
   [@bs.unwrap]
@@ -77,7 +77,7 @@ external addSchema :
   t =
   "";
 
-[@bs.send.pipe : t]
+[@bs.send.pipe: t]
 external addMetaSchema :
   (
   [@bs.unwrap]
@@ -86,11 +86,11 @@ external addMetaSchema :
   t =
   "";
 
-[@bs.send.pipe : t] external validateSchema : schema => bool = "";
+[@bs.send.pipe: t] external validateSchema : schema => bool = "";
 
-[@bs.send.pipe : t] external getSchema : string => validator = "";
+[@bs.send.pipe: t] external getSchema : string => validator = "";
 
-[@bs.send.pipe : t]
+[@bs.send.pipe: t]
 external removeSchema :
   (
   [@bs.unwrap]
@@ -104,12 +104,11 @@ external removeSchema :
   t =
   "";
 
-[@bs.send.pipe : t]
+[@bs.send.pipe: t]
 external addFormat :
   (
     string,
-    [@bs.unwrap]
-    [
+    [@bs.unwrap] [
       | `String(string)
       | `Pattern(Js.Re.t)
       | `Validator('a => bool)
@@ -119,13 +118,13 @@ external addFormat :
   t =
   "";
 
-[@bs.send.pipe : t] external addKeyword : (string, keyword('a)) => t = "";
+[@bs.send.pipe: t] external addKeyword : (string, keyword('a)) => t = "";
 
-[@bs.send.pipe : t] external getKeyword : string => Js.Json.t = "";
+[@bs.send.pipe: t] external getKeyword : string => Js.Json.t = "";
 
-[@bs.send.pipe : t] external removeKeyword : string => t = "";
+[@bs.send.pipe: t] external removeKeyword : string => t = "";
 
-[@bs.send.pipe : t] external errorsText : array(errors) => string = "";
+[@bs.send.pipe: t] external errorsText : array(errors) => string = "";
 
 let getKeyword = (name, ajv) =>
   switch (ajv |> getKeyword(name) |> Js.Json.classify) {
@@ -134,3 +133,45 @@ let getKeyword = (name, ajv) =>
   | Js.Json.JSONFalse => `Unknown
   | _ => failwith("unexpected_keyword_response")
   };
+
+/* function bindings for javascript consumers */
+let makeOptions = Ajv_options.make;
+
+let makeAjv = ajv;
+
+let compileSync = (schema, ajv) => {
+  let validator = compile(schema, ajv);
+  switch (validator) {
+  | `Sync(fn) => fn
+  | `Async(_) =>
+    raise(Failure("please use compileAsync to compile async validators"))
+  };
+};
+
+let compileAsync = (schema, ajv) => {
+  let validator = compile(schema, ajv);
+  switch (validator) {
+  | `Sync(fn) =>
+    /* TODO consider simply wrapping the sync validator to ease the consumer's life */
+    raise(Failure("please use compileSync to compile sync validators"))
+  | `Async(fn) => fn
+  };
+};
+
+let makeKeyword = Ajv_keyword.make;
+
+let setValidator = Ajv_keyword.setValidator;
+
+let setAsyncValidator = Ajv_keyword.setAsyncValidator;
+
+let addKeyword = addKeyword;
+
+let setKeywordType = Ajv_keyword.setType;
+
+let setKeywordIsAsync = Ajv_keyword.setIsAsync;
+
+let setOptionAllErrors = Ajv_options.allErrors;
+
+let setOptionJsonPointers = Ajv_options.jsonPointers;
+
+let setOptionRemoveAdditional = Ajv_options.removeAdditional;
