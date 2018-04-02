@@ -27,3 +27,7 @@ coverage/
 lib/
 yarn-error.log
 *.bs.js
+
+# vim swap files
+.*.sw?
+.sw?
