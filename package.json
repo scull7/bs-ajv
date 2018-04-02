@@ -1,6 +1,6 @@
 {
   "name": "bs-ajv",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "BucklesScript bindings to Ajv (Another JSON Validator)",
   "scripts": {
     "build": "bsb -make-world",
