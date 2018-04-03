@@ -88,33 +88,34 @@ module RawValidationError = {
       | Some(result) => result |> unescapeJsonPointerStr
       }
     };
-  let toError = ({keyword, dataPath, message, params, _}) =>
-    switch (keyword, params) {
-    | ("required", MissingProperty(key)) => {key, message}
-    | ("type", TypeError(_))
-    | ("minimum", LimitError(_))
-    | ("maximum", LimitError(_))
-    | ("maxLength", LimitError(_))
-    | ("minLength", LimitError(_))
-    | ("exclusiveMinimum", LimitError(_))
-    | ("exclusiveMaximum", LimitError(_))
-    | ("maxItems", LimitError(_))
-    | ("minItems", LimitError(_))
-    | ("maxProperties", LimitError(_))
-    | ("minProperties", LimitError(_))
-    | ("pattern", PatternError(_))
-    | ("contains", ContainsError)
-    | ("multipleOf", MultipleOfError(_)) => {
-        key: dataPathToFieldName(dataPath),
-        message,
-      }
-    | _ => failwith({j|Unknown keyword: $keyword|j})
-    };
 };
+
+let toError = ({keyword, dataPath, message, params, _}: RawValidationError.t) =>
+  switch (keyword, params) {
+  | ("required", MissingProperty(key)) => {key, message}
+  | ("type", TypeError(_))
+  | ("minimum", LimitError(_))
+  | ("maximum", LimitError(_))
+  | ("maxLength", LimitError(_))
+  | ("minLength", LimitError(_))
+  | ("exclusiveMinimum", LimitError(_))
+  | ("exclusiveMaximum", LimitError(_))
+  | ("maxItems", LimitError(_))
+  | ("minItems", LimitError(_))
+  | ("maxProperties", LimitError(_))
+  | ("minProperties", LimitError(_))
+  | ("pattern", PatternError(_))
+  | ("contains", ContainsError)
+  | ("multipleOf", MultipleOfError(_)) => {
+      key: RawValidationError.dataPathToFieldName(dataPath),
+      message,
+    }
+  | _ => failwith({j|Unknown keyword: $keyword|j})
+  };
 
 let toDict = json =>
   Json.Decode.list(RawValidationError.fromJson, json)
-  |> Belt_List.map(_, RawValidationError.toError)
+  |> Belt_List.map(_, toError)
   |> Belt_List.reduce(_, Belt_MapString.empty, (m, e) =>
        Belt_MapString.set(m, e.key, e.message)
      );
